@@ -6,9 +6,26 @@ import (
 	"net"
 
 	reuse "github.com/libp2p/go-reuseport"
+	"github.com/stanzhai/vishnu"
 )
 
 func main() {
+	vishnu.Config.LoadConfig()
+	config := vishnu.Config
+
+	switch config.Type {
+	case "client":
+		vishnu.NewClient(config.Bridge, config.Port).Run()
+	case "bridge":
+		vishnu.NewBridge(config.Port).Run()
+	case "server":
+		vishnu.NewServer(config.Bridge, config.Port).Run()
+	default:
+		test()
+	}
+}
+
+func test() {
 	l, err := reuse.Listen("tcp", "127.0.0.1:1234")
 	if err != nil {
 		log.Fatal(err)
@@ -31,6 +48,11 @@ func main() {
 			if e != nil {
 				log.Fatal(e)
 				return
+			}
+			log.Print("local addr: %s", c2.LocalAddr())
+			_, e3 := reuse.Listen("tcp", c2.LocalAddr().String())
+			if e3 != nil {
+				log.Fatal(e3)
 			}
 			d := make(chan int, 1)
 			go func() {
